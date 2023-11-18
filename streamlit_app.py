@@ -2,11 +2,12 @@ import streamlit as st
 import subprocess
 import time
 
+# Initialize the output in session state if it doesn't exist
+if 'output' not in st.session_state:
+    st.session_state.output = ""
+
 # Function to run a command and append output to the session state
 def run_command(cmd):
-    if 'output' not in st.session_state or not cmd:
-        st.session_state.output = ""
-
     process = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
     )
@@ -24,6 +25,8 @@ user_input = st.text_input("Enter a shell command")
 
 # Button to run the command
 if st.button('Run Command'):
+    # Clear previous output
+    st.session_state.output = ""
     run_command(user_input)
 
 # Display the output
