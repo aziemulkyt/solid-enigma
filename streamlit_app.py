@@ -1,21 +1,18 @@
 import streamlit as st
-import subprocess
 import time
+import os
 
-# Initialize the output in session state if it doesn't exist
-if 'output' not in st.session_state:
-    st.session_state.output = ""
+# Function to start the command in the background
+def start_command(cmd):
+    output_file = "command_output.txt"
+    os.system(f"{cmd} > {output_file} 2>&1 &")
+    return output_file
 
-# Function to run a command and append output to the session state
-def run_command(cmd):
-    process = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-    )
-
-    # Read the output line by line and update session state
-    for line in iter(process.stdout.readline, ''):
-        st.session_state.output += line
-        time.sleep(0.1)  # Small delay to allow for UI updates
+# Function to read the output file and update session state
+def update_output(output_file):
+    if os.path.exists(output_file):
+        with open(output_file, "r") as file:
+            st.session_state.output = file.read()
 
 # Streamlit UI
 st.title("Run Shell Commands")
@@ -27,11 +24,17 @@ user_input = st.text_input("Enter a shell command")
 if st.button('Run Command'):
     # Clear previous output
     st.session_state.output = ""
-    run_command(user_input)
+    output_file = start_command(user_input)
+    st.session_state.output_file = output_file
 
 # Display the output
+if 'output' not in st.session_state:
+    st.session_state.output = ""
+
 st.text_area("Output", st.session_state.output, height=300)
 
-# Rerun the app every few seconds to update the output
-st_autorefresh_interval = 1  # seconds
-st.experimental_rerun() if time.time() % st_autorefresh_interval < 0.1 else None
+# Periodically update the output
+if 'output_file' in st.session_state:
+    update_output(st.session_state.output_file)
+    time.sleep(1)
+    st.experimental_rerun()
